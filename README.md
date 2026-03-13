@@ -1,12 +1,15 @@
 $csv = Import-Csv -Path "C:\kasutajad.csv"
 
-
 foreach ($kasutaja in $csv) {
     # Eesnimi + perenimi lahutamine
-    $nimeOsad = $kasutaja.Name.Split(" ")
+    $nimeOsad = $kasutaja.Name.Trim().Split(" ")
+    if ($nimeOsad.Count -lt 2) {
+        Write-Host "Nimi '$($kasutaja.Name)' pole kujul 'Eesnimi Perenimi', jätan vahele." -ForegroundColor Red
+        continue
+    }
     $eesnimi = $nimeOsad[0]
     $perenimi = $nimeOsad[1]
-    $kasutajanimi = ($eesnimi[0] + $perenimi).ToLower()
+    $kasutajanimi = ($eesnimi[0].ToString() + $perenimi).ToLower()
 
     $ouPath = "OU=$($kasutaja.OU),OU=KASUTAJAD,DC=kohvi,DC=praktika"
 
@@ -44,5 +47,8 @@ foreach ($kasutaja in $csv) {
     }
 
     # Lisa kasutaja gruppi
-    Add-ADGroupMember -Identity $grupp -Members $kasutajanimi
+    $adKasutaja = Get-ADUser -Identity $kasutajanimi -ErrorAction SilentlyContinue
+    if ($adKasutaja) {
+        Add-ADGroupMember -Identity $grupp -Members $adKasutaja
+    }
 }
